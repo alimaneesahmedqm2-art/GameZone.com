@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VortexVelocity</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+
+  :root {
+    --bg: #050a14;
+    --bg2: #0a1428;
+    --bg3: #0f1e3a;
+    --panel: #0d1a30;
+    --accent: #00d4ff;
+    --accent2: #ff3c00;
+    --gold: #ffd700;
+    --green: #00ff88;
+    --red: #ff3c3c;
+    --text: #cce8ff;
+    --dim: #5580a0;
+    --border: #1a3a5c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── SCANLINE overlay ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px);
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  h1, h2, h3 { font-family: 'Orbitron', monospace; }
+
+  /* ── HEADER ── */
+  #header {
+    background: linear-gradient(135deg, #050a14 0%, #0a1428 100%);
+    border-bottom: 2px solid var(--accent);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 0 30px rgba(0,212,255,0.15);
+  }
+
+  #header h1 {
+    font-size: 1.4rem;
+    color: var(--accent);
+    text-shadow: 0 0 20px rgba(0,212,255,0.5);
+    letter-spacing: 4px;
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .stat-pill {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .stat-pill span { color: var(--accent); font-weight: 700; }
+
+  /* ── NAV ── */
+  #nav {
+    display: flex;
+    gap: 4px;
+    padding: 10px 24px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+
+  .nav-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--dim);
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-btn.active {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+    box-shadow: 0 0 15px rgba(0,212,255,0.4);
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; padding: 24px; max-width: 900px; margin: 0 auto; }
+  .screen.active { display: block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .card h2 {
+    font-size: 0.9rem;
+    letter-spacing: 3px;
+    color: var(--accent);
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── RACE SCREEN ── */
+  .track-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+  }
+
+  .track-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .track-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 60%, rgba(0,212,255,0.05));
+    pointer-events: none;
+  }
+
+  .track-card:hover:not(.locked) {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px rgba(0,212,255,0.2);
+    transform: translateY(-2px);
+  }
+
+  .track-card.locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .track-num {
+    font-family: 'Orbitron', monospace;
+    font-size: 2rem;
+    color: var(--border);
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-weight: 900;
+  }
+
+  .track-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+
+  .track-status {
+    font-size: 0.8rem;
+    color: var(--dim);
+  }
+
+  .track-status.unlocked { color: var(--green); }
+
+  /* ── DIFFICULTY PICKER ── */
+  #diff-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #diff-modal.open { display: flex; }
+
+  .modal-box {
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 32px;
+    width: 380px;
+    box-shadow: 0 0 60px rgba(0,212,255,0.2);
+  }
+
+  .modal-box h2 {
+    font-size: 1rem;
+    letter-spacing: 3px;
+    color: var(--accent);
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .diff-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .diff-btn:hover { border-color: var(--accent); background: rgba(0,212,255,0.07); }
+  .diff-btn .reward { color: var(--gold); font-family: 'Orbitron', monospace; font-size: 0.8rem; }
+
+  .diff-easy { border-left: 3px solid var(--green); }
+  .diff-normal { border-left: 3px solid var(--accent); }
+  .diff-hard { border-left: 3px solid #ff9900; }
+  .diff-impossible { border-left: 3px solid var(--red); }
+
+  .modal-close {
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--dim);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+
+  .modal-close:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── RACE ANIMATION MODAL ── */
+  #race-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+
+  #race-modal.open { display: flex; }
+
+  .race-track {
+    width: 640px;
+    max-width: 90vw;
+    background: #0a1428;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .race-road {
+    height: 120px;
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 20px;
+    border: 1px solid #222;
+  }
+
+  .road-line {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 4px;
+    width: 50px;
+    background: var(--gold);
+    border-radius: 2px;
+    animation: roadScroll 0.3s linear infinite;
+  }
+
+  @keyframes roadScroll {
+    from { left: 110%; }
+    to { left: -10%; }
+  }
+
+  .car-player {
+    position: absolute;
+    bottom: 20px;
+    font-size: 2rem;
+    transition: left 0.1s;
+    filter: drop-shadow(0 0 8px rgba(0,212,255,0.8));
+  }
+
+  .car-ai {
+    position: absolute;
+    top: 20px;
+    font-size: 2rem;
+    transition: left 0.1s;
+    filter: drop-shadow(0 0 8px rgba(255,60,0,0.8));
+  }
+
+  .progress-bars { margin-bottom: 16px; }
+
+  .prog-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .prog-label {
+    width: 80px;
+    font-size: 0.8rem;
+    font-family: 'Orbitron', monospace;
+    color: var(--dim);
+  }
+
+  .prog-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--bg3);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .prog-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.05s;
+  }
+
+  .prog-fill.player { background: linear-gradient(90deg, var(--accent), #0088ff); }
+  .prog-fill.ai { background: linear-gradient(90deg, var(--red), #ff8800); }
+
+  .prog-pct {
+    width: 40px;
+    text-align: right;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+  }
+
+  .race-result {
+    text-align: center;
+    padding: 20px;
+    display: none;
+  }
+
+  .race-result h2 {
+    font-size: 2rem;
+    letter-spacing: 4px;
+    margin-bottom: 10px;
+  }
+
+  .result-win { color: var(--green); text-shadow: 0 0 20px rgba(0,255,136,0.5); }
+  .result-lose { color: var(--red); text-shadow: 0 0 20px rgba(255,60,60,0.5); }
+
+  /* ── GARAGE ── */
+  .car-display {
+    text-align: center;
+    padding: 20px;
+    font-size: 5rem;
+    text-shadow: 0 0 40px rgba(0,212,255,0.3);
+  }
+
+  .car-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .stat-name {
+    width: 110px;
+    font-size: 0.85rem;
+    color: var(--dim);
+    font-weight: 600;
+  }
+
+  .stat-track {
+    flex: 1;
+    height: 6px;
+    background: var(--bg3);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .stat-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #0088ff);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+
+  .stat-val {
+    width: 36px;
+    text-align: right;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+    color: var(--accent);
+  }
+
+  /* ── SHOP / UPGRADES ── */
+  .upgrade-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .upgrade-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .upgrade-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .upgrade-desc {
+    font-size: 0.8rem;
+    color: var(--dim);
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+
+  .upgrade-level {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+
+  .lvl-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    transition: all 0.2s;
+  }
+
+  .lvl-dot.filled {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 6px rgba(0,212,255,0.5);
+  }
+
+  .lvl-dot.maxed {
+    background: var(--gold);
+    border-color: var(--gold);
+    box-shadow: 0 0 6px rgba(255,215,0,0.5);
+  }
+
+  .upgrade-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid var(--accent);
+    background: rgba(0,212,255,0.08);
+    color: var(--accent);
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .upgrade-btn:hover { background: rgba(0,212,255,0.18); box-shadow: 0 0 10px rgba(0,212,255,0.2); }
+  .upgrade-btn:disabled { opacity: 0.3; cursor: not-allowed; border-color: var(--border); color: var(--dim); background: none; }
+  .upgrade-btn.maxed { border-color: var(--gold); color: var(--gold); background: rgba(255,215,0,0.06); cursor: default; }
+
+  /* ── XP BAR ── */
+  .xp-section { margin-bottom: 20px; }
+
+  .xp-bar {
+    height: 8px;
+    background: var(--bg3);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+
+  .xp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #8800ff, var(--accent));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  .xp-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--dim);
+    margin-top: 4px;
+  }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    z-index: 400;
+    transition: transform 0.3s ease;
+    box-shadow: 0 0 30px rgba(0,212,255,0.2);
+    text-align: center;
+    min-width: 200px;
+  }
+
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.error { border-color: var(--red); color: var(--red); }
+  #toast.win { border-color: var(--green); color: var(--green); }
+
+  /* ── LEADERBOARD ── */
+  .lb-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    gap: 12px;
+    font-size: 0.9rem;
+  }
+
+  .lb-rank {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.8rem;
+    color: var(--dim);
+    width: 28px;
+  }
+
+  .lb-rank.gold { color: var(--gold); }
+  .lb-rank.silver { color: #ccc; }
+  .lb-rank.bronze { color: #cd7f32; }
+
+  .lb-name { flex: 1; font-weight: 600; }
+  .lb-score { font-family: 'Orbitron', monospace; font-size: 0.8rem; color: var(--accent); }
+
+  /* ── CHAMP BANNER ── */
+  .champ-banner {
+    text-align: center;
+    padding: 32px;
+    background: linear-gradient(135deg, rgba(255,215,0,0.05), rgba(0,212,255,0.05));
+    border: 1px solid var(--gold);
+    border-radius: 12px;
+    margin-bottom: 20px;
+  }
+
+  .champ-banner h2 {
+    color: var(--gold);
+    font-size: 1.2rem;
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+    text-shadow: 0 0 20px rgba(255,215,0,0.4);
+  }
+
+  .champ-banner p { color: var(--dim); font-size: 0.9rem; }
+
+  /* ── BUTTONS ── */
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #0088ff);
+    color: var(--bg);
+    border: none;
+    padding: 12px 28px;
+    border-radius: 6px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.2s;
+    box-shadow: 0 0 15px rgba(0,212,255,0.3);
+  }
+
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,212,255,0.4); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    #header h1 { font-size: 1rem; }
+    .header-stats { gap: 8px; }
+    .stat-pill { font-size: 0.7rem; padding: 4px 10px; }
+    .screen { padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <h1>⚡ VORTEXVELOCITY</h1>
+  <div class="header-stats">
+    <div class="stat-pill">🏆 LVL <span id="h-lvl">1</span></div>
+    <div class="stat-pill">🪙 <span id="h-vc">0</span> VC</div>
+    <div class="stat-pill">⭐ XP <span id="h-xp">0</span></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<div id="nav">
+  <button class="nav-btn active" onclick="showScreen('race')">🏁 RACE</button>
+  <button class="nav-btn" onclick="showScreen('garage')">🚗 GARAGE</button>
+  <button class="nav-btn" onclick="showScreen('shop')">🏪 SHOP</button>
+  <button class="nav-btn" onclick="showScreen('leaderboard')">📊 STATS</button>
+</div>
+
+<!-- ══ RACE SCREEN ══ -->
+<div id="screen-race" class="screen active">
+  <div class="card">
+    <h2>SELECT TRACK</h2>
+    <div class="xp-section">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-family:'Orbitron',monospace;font-size:0.8rem;color:var(--dim)">LEVEL <span id="xp-lvl-label">1</span></span>
+        <span id="xp-label" style="font-size:0.8rem;color:var(--dim)">0 / 100 XP</span>
+      </div>
+      <div class="xp-bar"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+    </div>
+    <div class="track-grid" id="track-grid"></div>
+  </div>
+</div>
+
+<!-- ══ GARAGE SCREEN ══ -->
+<div id="screen-garage" class="screen">
+  <div class="card">
+    <h2>GARAGE</h2>
+    <div class="car-display">🏎️</div>
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-family:'Orbitron',monospace;font-size:1rem;color:var(--accent)" id="g-carname">Mustang GT</div>
+      <div style="font-size:0.85rem;color:var(--dim);margin-top:4px">Class: Street Racer</div>
+    </div>
+    <div class="car-info">
+      <div>
+        <div class="stat-bar-row">
+          <span class="stat-name">TOP SPEED</span>
+          <div class="stat-track"><div class="stat-fill" id="g-speed" style="width:40%"></div></div>
+          <span class="stat-val" id="g-speed-v">120</span>
+        </div>
+        <div class="stat-bar-row">
+          <span class="stat-name">ACCELERATION</span>
+          <div class="stat-track"><div class="stat-fill" id="g-acc" style="width:34%"></div></div>
+          <span class="stat-val" id="g-acc-v">100</span>
+        </div>
+        <div class="stat-bar-row">
+          <span class="stat-name">HANDLING</span>
+          <div class="stat-track"><div class="stat-fill" id="g-hand" style="width:34%"></div></div>
+          <span class="stat-val" id="g-hand-v">100</span>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'Orbitron',monospace;font-size:0.7rem;color:var(--dim);margin-bottom:10px;letter-spacing:2px">UPGRADE LEVELS</div>
+        <div id="g-upgrades"></div>
+      </div>
+    </div>
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:14px">
+      <div style="font-family:'Orbitron',monospace;font-size:0.7rem;color:var(--dim);letter-spacing:2px;margin-bottom:10px">RACE RECORD</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center">
+        <div><div style="font-size:0.75rem;color:var(--dim)">WINS</div><div id="g-wins" style="font-family:'Orbitron',monospace;color:var(--green);font-size:1.2rem">0</div></div>
+        <div><div style="font-size:0.75rem;color:var(--dim)">LOSSES</div><div id="g-losses" style="font-family:'Orbitron',monospace;color:var(--red);font-size:1.2rem">0</div></div>
+        <div><div style="font-size:0.75rem;color:var(--dim)">WIN RATE</div><div id="g-winrate" style="font-family:'Orbitron',monospace;color:var(--accent);font-size:1.2rem">—</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SHOP SCREEN ══ -->
+<div id="screen-shop" class="screen">
+  <div class="card">
+    <h2>UPGRADES</h2>
+    <div style="margin-bottom:16px;color:var(--dim);font-size:0.85rem">Spend Vort Coins to upgrade your Mustang GT. Each part has 5 levels.</div>
+    <div class="upgrade-grid" id="upgrade-grid"></div>
+  </div>
+</div>
+
+<!-- ══ LEADERBOARD / STATS SCREEN ══ -->
+<div id="screen-leaderboard" class="screen">
+  <div id="champ-section" style="display:none">
+    <div class="champ-banner">
+      <h2>🏆 VORTEX CHAMPION</h2>
+      <p>You've conquered all 10 tracks on Impossible. The Vortex Championship awaits.</p>
+    </div>
+  </div>
+  <div class="card">
+    <h2>YOUR STATS</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px" id="stats-grid"></div>
+  </div>
+  <div class="card">
+    <h2>DIFFICULTY RECORDS</h2>
+    <div id="diff-records"></div>
+  </div>
+</div>
+
+<!-- ══ DIFFICULTY MODAL ══ -->
+<div id="diff-modal">
+  <div class="modal-box">
+    <h2>⚡ CHOOSE DIFFICULTY</h2>
+    <div id="diff-track-name" style="text-align:center;color:var(--dim);font-size:0.85rem;margin-bottom:16px"></div>
+    <button class="diff-btn diff-easy" onclick="startRace('easy')"><span>EASY</span><span class="reward">+10 VC</span></button>
+    <button class="diff-btn diff-normal" onclick="startRace('normal')"><span>NORMAL</span><span class="reward">+20 VC</span></button>
+    <button class="diff-btn diff-hard" onclick="startRace('hard')"><span>HARD</span><span class="reward">+40 VC</span></button>
+    <button class="diff-btn diff-impossible" onclick="startRace('impossible')"><span>IMPOSSIBLE</span><span class="reward">+100 VC</span></button>
+    <button class="modal-close" onclick="closeModal('diff-modal')">CANCEL</button>
+  </div>
+</div>
+
+<!-- ══ RACE MODAL ══ -->
+<div id="race-modal">
+  <div class="race-track">
+    <div style="font-family:'Orbitron',monospace;font-size:0.8rem;letter-spacing:3px;color:var(--accent);margin-bottom:14px;text-align:center" id="race-title">CITY SPRINT — EASY</div>
+    <div class="race-road" id="race-road">
+      <div class="road-line" style="animation-delay:0s"></div>
+      <div class="road-line" style="animation-delay:-0.1s"></div>
+      <div class="road-line" style="animation-delay:-0.2s"></div>
+      <div class="road-line" style="animation-delay:-0.3s"></div>
+      <div class="road-line" style="animation-delay:-0.4s"></div>
+      <div class="car-ai" id="car-ai" style="left:0%">🔴</div>
+      <div class="car-player" id="car-player" style="left:0%">🏎️</div>
+    </div>
+    <div class="progress-bars">
+      <div class="prog-row">
+        <span class="prog-label">YOU</span>
+        <div class="prog-bar"><div class="prog-fill player" id="prog-player" style="width:0%"></div></div>
+        <span class="prog-pct" id="pct-player">0%</span>
+      </div>
+      <div class="prog-row">
+        <span class="prog-label">AI</span>
+        <div class="prog-bar"><div class="prog-fill ai" id="prog-ai" style="width:0%"></div></div>
+        <span class="prog-pct" id="pct-ai">0%</span>
+      </div>
+    </div>
+    <div class="race-result" id="race-result">
+      <h2 id="result-heading"></h2>
+      <div id="result-detail" style="color:var(--dim);margin-bottom:16px;font-size:0.85rem"></div>
+      <button class="btn-primary" onclick="closeRaceModal()">CONTINUE</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  GAME DATA
+// ═══════════════════════════════════════════
+
+const TRACKS = [
+  { name: "City Sprint", emoji: "🌆" },
+  { name: "Desert Dash", emoji: "🏜️" },
+  { name: "Coastal Highway", emoji: "🌊" },
+  { name: "Mountain Run", emoji: "⛰️" },
+  { name: "Neon City Nights", emoji: "🌃" },
+  { name: "Industrial Rush", emoji: "🏭" },
+  { name: "Frozen Circuit", emoji: "❄️" },
+  { name: "Volcano Pass", emoji: "🌋" },
+  { name: "Skyway Raceway", emoji: "☁️" },
+  { name: "Vortex Core", emoji: "⚡" },
+];
+
+const DIFFICULTIES = {
+  easy:       { reward: 10,  xp: 15,  aiSpeed: 75,  label: "EASY",       color: "#00ff88" },
+  normal:     { reward: 20,  xp: 30,  aiSpeed: 120, label: "NORMAL",     color: "#00d4ff" },
+  hard:       { reward: 40,  xp: 60,  aiSpeed: 170, label: "HARD",       color: "#ff9900" },
+  impossible: { reward: 100, xp: 150, aiSpeed: 230, label: "IMPOSSIBLE", color: "#ff3c3c" },
+};
+
+const UPGRADES = [
+  { key: "engine",  name: "ENGINE",   desc: "+10 Speed per level",       cost: 50,  stat: "speed",        gain: 10 },
+  { key: "turbo",   name: "TURBO",    desc: "+10 Acceleration per level", cost: 60,  stat: "acceleration", gain: 10 },
+  { key: "brakes",  name: "BRAKES",   desc: "+8 Handling per level",      cost: 40,  stat: "handling",     gain: 8  },
+  { key: "tires",   name: "TIRES",    desc: "+8 Grip (Handling) per level",cost: 45, stat: "handling",     gain: 8  },
+  { key: "nitrous", name: "NITROUS",  desc: "+15 Speed burst per level",  cost: 70,  stat: "speed",        gain: 15 },
+  { key: "weight",  name: "WT. REDUC.", desc: "+7 Accel & Handling per level", cost: 80, stat: "both", gain: 7 },
+];
+
+const XP_PER_LEVEL = [0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200, 9999999];
+
+// ═══════════════════════════════════════════
+//  LOAD / SAVE
+// ═══════════════════════════════════════════
+
+function defaultSave() {
+  return {
+    level: 1, xp: 0, vortCoins: 0,
+    wins: 0, losses: 0,
+    unlockedTracks: 1,
+    car: { speed: 120, acceleration: 100, handling: 100, upgrades: { engine:0,turbo:0,brakes:0,tires:0,nitrous:0,weight:0 } },
+    diffRecords: { easy: { wins:0, losses:0 }, normal: { wins:0, losses:0 }, hard: { wins:0, losses:0 }, impossible: { wins:0, losses:0 } },
+    isChamp: false,
+  };
+}
+
+let G;
+try { G = JSON.parse(localStorage.getItem('vv_save')) || defaultSave(); }
+catch(e) { G = defaultSave(); }
+
+// migrate old saves
+if (!G.diffRecords) G.diffRecords = defaultSave().diffRecords;
+if (!G.isChamp) G.isChamp = false;
+if (!G.car.upgrades.weight) G.car.upgrades.weight = 0;
+
+function save() { localStorage.setItem('vv_save', JSON.stringify(G)); }
+
+// ═══════════════════════════════════════════
+//  UI
+// ═══════════════════════════════════════════
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (id === 'garage') renderGarage();
+  if (id === 'shop') renderShop();
+  if (id === 'leaderboard') renderStats();
+}
+
+function updateHeader() {
+  document.getElementById('h-lvl').textContent = G.level;
+  document.getElementById('h-vc').textContent = G.vortCoins;
+  document.getElementById('h-xp').textContent = G.xp;
+  const xpNeeded = XP_PER_LEVEL[G.level] || 9999999;
+  const xpPrev = XP_PER_LEVEL[G.level - 1] || 0;
+  const pct = Math.min(100, ((G.xp - xpPrev) / (xpNeeded - xpPrev)) * 100);
+  document.getElementById('xp-fill').style.width = pct + '%';
+  document.getElementById('xp-lvl-label').textContent = G.level;
+  document.getElementById('xp-label').textContent = G.xp + ' / ' + xpNeeded + ' XP';
+}
+
+function toast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  setTimeout(() => t.className = '', 2500);
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ═══════════════════════════════════════════
+//  TRACK GRID
+// ═══════════════════════════════════════════
+
+function renderTracks() {
+  const grid = document.getElementById('track-grid');
+  grid.innerHTML = '';
+  TRACKS.forEach((t, i) => {
+    const locked = i >= G.unlockedTracks;
+    const div = document.createElement('div');
+    div.className = 'track-card' + (locked ? ' locked' : '');
+    div.innerHTML = `
+      <div class="track-num">${String(i+1).padStart(2,'0')}</div>
+      <div style="font-size:2rem;margin-bottom:6px">${t.emoji}</div>
+      <div class="track-name">${t.name}</div>
+      <div class="track-status ${locked ? '' : 'unlocked'}">${locked ? '🔒 LOCKED — Reach Level ' + (i+1) : '✅ AVAILABLE'}</div>
+    `;
+    if (!locked) div.onclick = () => openDiffModal(i);
+    grid.appendChild(div);
+  });
+}
+
+let selectedTrack = 0;
+
+function openDiffModal(idx) {
+  selectedTrack = idx;
+  document.getElementById('diff-track-name').textContent = TRACKS[idx].emoji + ' ' + TRACKS[idx].name;
+  document.getElementById('diff-modal').classList.add('open');
+}
+
+// ═══════════════════════════════════════════
+//  RACE ENGINE
+// ═══════════════════════════════════════════
+
+let raceInterval = null;
+
+function startRace(diff) {
+  closeModal('diff-modal');
+  const d = DIFFICULTIES[diff];
+  const track = TRACKS[selectedTrack];
+  document.getElementById('race-title').textContent = track.name.toUpperCase() + ' — ' + d.label;
+  document.getElementById('race-result').style.display = 'none';
+  document.getElementById('prog-player').style.width = '0%';
+  document.getElementById('prog-ai').style.width = '0%';
+  document.getElementById('pct-player').textContent = '0%';
+  document.getElementById('pct-ai').textContent = '0%';
+  document.getElementById('car-player').style.left = '0%';
+  document.getElementById('car-ai').style.left = '0%';
+  document.getElementById('race-modal').classList.add('open');
+
+  const playerPower = G.car.speed + G.car.acceleration + G.car.handling;
+  // base player speed units out of 300 → 0.4–1.3% per tick
+  const playerTickSpeed = 0.3 + (playerPower / 900) * 0.9 + Math.random() * 0.15;
+  const aiTickSpeed     = 0.3 + (d.aiSpeed * 3 / 900) * 0.9;
+
+  let playerProg = 0, aiProg = 0;
+
+  if (raceInterval) clearInterval(raceInterval);
+
+  raceInterval = setInterval(() => {
+    const pVar = (Math.random() - 0.48) * 0.25;
+    const aVar = (Math.random() - 0.5) * 0.2;
+    playerProg = Math.min(100, playerProg + playerTickSpeed + pVar);
+    aiProg     = Math.min(100, aiProg     + aiTickSpeed     + aVar);
+
+    document.getElementById('prog-player').style.width = playerProg + '%';
+    document.getElementById('prog-ai').style.width     = aiProg     + '%';
+    document.getElementById('pct-player').textContent  = Math.floor(playerProg) + '%';
+    document.getElementById('pct-ai').textContent      = Math.floor(aiProg)     + '%';
+    document.getElementById('car-player').style.left   = Math.min(80, playerProg * 0.8) + '%';
+    document.getElementById('car-ai').style.left       = Math.min(80, aiProg     * 0.8) + '%';
+
+    if (playerProg >= 100 || aiProg >= 100) {
+      clearInterval(raceInterval);
+      const won = playerProg >= aiProg;
+      finishRace(won, diff, d);
+    }
+  }, 60);
+}
+
+function finishRace(won, diff, d) {
+  const heading = document.getElementById('result-heading');
+  const detail  = document.getElementById('result-detail');
+
+  if (won) {
+    G.vortCoins += d.reward;
+    G.wins++;
+    G.diffRecords[diff].wins++;
+    const xpGained = d.xp;
+    G.xp += xpGained;
+    heading.textContent = '🏆 YOU WIN!';
+    heading.className = 'result-win';
+
+    // check level up
+    let leveled = false;
+    while (G.level < 10 && G.xp >= XP_PER_LEVEL[G.level]) {
+      G.level++;
+      G.unlockedTracks = Math.min(10, G.level);
+      leveled = true;
+    }
+
+    detail.innerHTML = `+${d.reward} Vort Coins &nbsp;·&nbsp; +${xpGained} XP${leveled ? ' &nbsp;🎉 LEVEL UP!' : ''}`;
+
+    // check championship
+    if (selectedTrack === 9 && diff === 'impossible') {
+      G.isChamp = true;
+    }
+  } else {
+    G.losses++;
+    G.diffRecords[diff].losses++;
+    heading.textContent = '💀 YOU LOSE';
+    heading.className = 'result-lose';
+    detail.textContent = 'Upgrade your car and try again.';
+  }
+
+  save();
+  updateHeader();
+  renderTracks();
+  document.getElementById('race-result').style.display = 'block';
+}
+
+function closeRaceModal() {
+  closeModal('race-modal');
+  if (G.isChamp) {
+    document.getElementById('champ-section').style.display = 'block';
+  }
+}
+
+// ═══════════════════════════════════════════
+//  GARAGE
+// ═══════════════════════════════════════════
+
+function renderGarage() {
+  const maxStat = 300;
+  document.getElementById('g-speed').style.width   = Math.min(100,(G.car.speed   / maxStat * 100)) + '%';
+  document.getElementById('g-acc').style.width     = Math.min(100,(G.car.acceleration / maxStat * 100)) + '%';
+  document.getElementById('g-hand').style.width    = Math.min(100,(G.car.handling / maxStat * 100)) + '%';
+  document.getElementById('g-speed-v').textContent = G.car.speed;
+  document.getElementById('g-acc-v').textContent   = G.car.acceleration;
+  document.getElementById('g-hand-v').textContent  = G.car.handling;
+  document.getElementById('g-wins').textContent    = G.wins;
+  document.getElementById('g-losses').textContent  = G.losses;
+  const total = G.wins + G.losses;
+  document.getElementById('g-winrate').textContent = total ? Math.round(G.wins/total*100) + '%' : '—';
+
+  const upg = document.getElementById('g-upgrades');
+  upg.innerHTML = '';
+  UPGRADES.forEach(u => {
+    const lvl = G.car.upgrades[u.key];
+    const dots = Array.from({length:5}, (_,i) => `<div class="lvl-dot ${i<lvl?(lvl===5?'maxed':'filled'):''}"></div>`).join('');
+    upg.innerHTML += `<div style="margin-bottom:8px"><div style="font-size:0.75rem;color:var(--dim);margin-bottom:3px">${u.name}</div><div class="upgrade-level">${dots}</div></div>`;
+  });
+}
+
+// ═══════════════════════════════════════════
+//  SHOP
+// ═══════════════════════════════════════════
+
+function renderShop() {
+  const grid = document.getElementById('upgrade-grid');
+  grid.innerHTML = '';
+  UPGRADES.forEach(u => {
+    const lvl = G.car.upgrades[u.key];
+    const maxed = lvl >= 5;
+    const nextCost = u.cost * (lvl + 1);
+    const canAfford = G.vortCoins >= nextCost;
+    const dots = Array.from({length:5}, (_,i) => `<div class="lvl-dot ${i<lvl?(maxed?'maxed':'filled'):''}"></div>`).join('');
+    const btnLabel = maxed ? 'MAX LEVEL' : `UPGRADE — ${nextCost} VC`;
+    grid.innerHTML += `
+      <div class="upgrade-card">
+        <div class="upgrade-name">${u.name}</div>
+        <div class="upgrade-desc">${u.desc}</div>
+        <div class="upgrade-level" style="margin-bottom:10px">${dots}</div>
+        <button class="upgrade-btn ${maxed?'maxed':''}" ${maxed?'disabled':''} onclick="buyUpgrade('${u.key}')" id="upg-btn-${u.key}">
+          ${btnLabel}
+        </button>
+      </div>`;
+  });
+}
+
+function buyUpgrade(key) {
+  const u = UPGRADES.find(x => x.key === key);
+  const lvl = G.car.upgrades[key];
+  if (lvl >= 5) return;
+  const cost = u.cost * (lvl + 1);
+  if (G.vortCoins < cost) { toast('Not enough Vort Coins!', 'error'); return; }
+  G.vortCoins -= cost;
+  G.car.upgrades[key]++;
+  if (u.stat === 'speed') G.car.speed += u.gain;
+  else if (u.stat === 'acceleration') G.car.acceleration += u.gain;
+  else if (u.stat === 'handling') G.car.handling += u.gain;
+  else if (u.stat === 'both') { G.car.acceleration += u.gain; G.car.handling += u.gain; }
+  save();
+  updateHeader();
+  renderShop();
+  toast(`${u.name} upgraded to Level ${G.car.upgrades[key]}!`, 'win');
+}
+
+// ═══════════════════════════════════════════
+//  STATS
+// ═══════════════════════════════════════════
+
+function renderStats() {
+  if (G.isChamp) document.getElementById('champ-section').style.display = 'block';
+
+  const sg = document.getElementById('stats-grid');
+  const items = [
+    ['LEVEL', G.level, '#8800ff'],
+    ['VORT COINS', G.vortCoins, 'var(--gold)'],
+    ['TOTAL XP', G.xp, 'var(--accent)'],
+    ['WINS', G.wins, 'var(--green)'],
+    ['LOSSES', G.losses, 'var(--red)'],
+    ['TRACKS OPEN', G.unlockedTracks + '/10', 'var(--accent)'],
+  ];
+  sg.innerHTML = items.map(([label, val, color]) => `
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:14px;text-align:center">
+      <div style="font-size:0.75rem;color:var(--dim);margin-bottom:4px">${label}</div>
+      <div style="font-family:'Orbitron',monospace;font-size:1.2rem;color:${color}">${val}</div>
+    </div>`).join('');
+
+  const dr = document.getElementById('diff-records');
+  dr.innerHTML = Object.entries(G.diffRecords).map(([diff, rec]) => {
+    const d = DIFFICULTIES[diff];
+    const total = rec.wins + rec.losses;
+    const wr = total ? Math.round(rec.wins/total*100) + '%' : '—';
+    return `<div class="lb-row">
+      <span style="font-family:'Orbitron',monospace;font-size:0.75rem;color:${d.color};width:90px">${d.label}</span>
+      <span style="flex:1;font-size:0.85rem;color:var(--dim)">${rec.wins}W / ${rec.losses}L</span>
+      <span style="font-family:'Orbitron',monospace;font-size:0.8rem;color:var(--accent)">${wr} WR</span>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+
+updateHeader();
+renderTracks();
+</script>
+</body>
+</html>
