@@ -2,128 +2,261 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>GameZone</title>
-
-<style>
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #0b0f1a;
-    color: white;
-}
-
-/* NAV */
-nav {
-    display: flex;
-    gap: 20px;
-    padding: 15px;
-    background: #11182a;
-}
-
-nav a {
-    color: white;
-    text-decoration: none;
-}
-
-/* HERO */
-.hero {
-    text-align: center;
-    padding: 60px 20px;
-}
-
-.hero h1 {
-    font-size: 50px;
-}
-
-/* GAME CARD */
-.game-card {
-    width: 250px;
-    background: #1a2238;
-    padding: 15px;
-    margin: 20px auto;
-    border-radius: 10px;
-    text-align: center;
-}
-
-.game-card button {
-    padding: 10px 15px;
-    border: none;
-    cursor: pointer;
-    background: #00d4ff;
-    font-weight: bold;
-}
-
-/* OVERLAY (Poki style game screen) */
-#gameOverlay {
-    position: fixed;
-    inset: 0;
-    background: black;
-    display: none;
-    z-index: 9999;
-}
-
-#gameFrame {
-    width: 100%;
-    height: 100%;
-    border: none;
-}
-
-#closeBtn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 10000;
-    padding: 10px 15px;
-    background: red;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
-</style>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>VortexVelocity 3D</title>
+<link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<!-- NAV -->
-<nav>
-    <a href="#">Home</a>
-    <a href="#">About</a>
-    <a href="#">Contact</a>
-</nav>
-
-<!-- HERO -->
-<div class="hero">
-    <h1>🎮 GameZone</h1>
-    <p>The ultimate gaming website.</p>
+<!-- ═══════════════ LOADING SCREEN ═══════════════ -->
+<div id="loading-screen">
+  <div class="load-inner">
+    <div class="load-logo">⚡</div>
+    <h1 class="load-title">VORTEX<span>VELOCITY</span></h1>
+    <div class="load-bar-wrap"><div class="load-bar" id="load-bar"></div></div>
+    <div class="load-text" id="load-text">Initializing Engine...</div>
+  </div>
 </div>
 
-<!-- GAME LIST -->
-<div class="game-card">
-    <h2>🏎️ VortexVelocity</h2>
-    <p>High-speed racing game with upgrades</p>
-    <button onclick="openGame('vortexvelocity')">PLAY</button>
+<!-- ═══════════════ HOME SCREEN ═══════════════ -->
+<div id="home-screen" class="screen hidden">
+  <div class="home-bg-overlay"></div>
+  <nav class="home-nav">
+    <div class="nav-logo">⚡ VORTEXVELOCITY</div>
+    <div class="nav-links">
+      <button class="nav-btn active" onclick="showSection('home')">HOME</button>
+      <button class="nav-btn" onclick="showSection('garage')">GARAGE</button>
+      <button class="nav-btn" onclick="showSection('dealership')">DEALERSHIP</button>
+      <button class="nav-btn" onclick="showSection('championships')">CUPS</button>
+      <button class="nav-btn" onclick="showSection('contact')">CONTACT</button>
+      <button class="nav-btn admin-btn" onclick="openAdmin()">ADMIN</button>
+    </div>
+    <div class="nav-stats">
+      <span class="stat-tag">🪙 <b id="nav-vc">0</b></span>
+      <span class="stat-tag">⭐ Lv<b id="nav-lv">1</b></span>
+    </div>
+  </nav>
+
+  <!-- HOME SECTION -->
+  <section id="section-home" class="home-section">
+    <div class="hero">
+      <div class="hero-text">
+        <div class="hero-eyebrow">STREET RACING EVOLVED</div>
+        <h2 class="hero-title">FEEL EVERY<br><span class="gradient-text">KILOMETER</span></h2>
+        <p class="hero-sub">15 legendary cars. 15 brutal tracks. 3D physics. Real drift. No limits.</p>
+        <div class="hero-btns">
+          <button class="btn-primary" onclick="showRaceSelect()">🏁 RACE NOW</button>
+          <button class="btn-secondary" onclick="showSection('dealership')">🚗 BROWSE CARS</button>
+        </div>
+      </div>
+      <div class="hero-car" id="hero-car-display"></div>
+    </div>
+
+    <!-- Daily Reward -->
+    <div id="daily-reward-banner" class="daily-banner hidden">
+      <div class="daily-inner">
+        <div class="daily-icon">🎁</div>
+        <div>
+          <div class="daily-title">DAILY REWARD AVAILABLE!</div>
+          <div class="daily-sub" id="daily-sub-text">Day 1 — Claim your reward</div>
+        </div>
+        <button class="btn-primary small" onclick="claimDailyReward()">CLAIM</button>
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="quick-stats">
+      <div class="qs-card"><div class="qs-num" id="qs-wins">0</div><div class="qs-label">WINS</div></div>
+      <div class="qs-card"><div class="qs-num" id="qs-cars">1</div><div class="qs-label">CARS OWNED</div></div>
+      <div class="qs-card"><div class="qs-num" id="qs-drift">0</div><div class="qs-label">DRIFT PTS</div></div>
+      <div class="qs-card"><div class="qs-num" id="qs-level">1</div><div class="qs-label">LEVEL</div></div>
+    </div>
+
+    <!-- Boss Banner -->
+    <div id="boss-banner" class="boss-banner hidden">
+      <div class="boss-flame">🔥</div>
+      <div><div class="boss-title" id="boss-name-lbl">BOSS CHALLENGE</div><div class="boss-sub">Defeat them to unlock special rewards!</div></div>
+      <button class="btn-danger" onclick="startBossRace()">CHALLENGE</button>
+    </div>
+  </section>
+
+  <!-- GARAGE SECTION -->
+  <section id="section-garage" class="home-section hidden">
+    <h2 class="section-title">🚗 MY GARAGE</h2>
+    <div class="garage-layout">
+      <div class="garage-car-show" id="garage-car-show"></div>
+      <div class="garage-info">
+        <div class="garage-car-name" id="g-car-name">Mustang GT</div>
+        <div class="garage-rarity" id="g-rarity">COMMON</div>
+        <div class="garage-stats" id="g-stats"></div>
+        <div class="garage-upgrades" id="g-upgrades"></div>
+        <button class="btn-primary" id="g-select-btn" onclick="selectCurrentGarageCar()">SELECT CAR</button>
+      </div>
+    </div>
+    <div class="owned-cars-row" id="owned-cars-row"></div>
+  </section>
+
+  <!-- DEALERSHIP SECTION -->
+  <section id="section-dealership" class="home-section hidden">
+    <h2 class="section-title">🏪 PREMIUM MOTORS</h2>
+    <div class="dealer-filters">
+      <button class="filter-btn active" onclick="filterDealer('all')">ALL</button>
+      <button class="filter-btn" onclick="filterDealer('common')">COMMON</button>
+      <button class="filter-btn" onclick="filterDealer('rare')">RARE</button>
+      <button class="filter-btn" onclick="filterDealer('epic')">EPIC</button>
+      <button class="filter-btn" onclick="filterDealer('legendary')">LEGENDARY</button>
+      <button class="filter-btn" onclick="filterDealer('mythic')">MYTHIC</button>
+    </div>
+    <div class="dealer-grid" id="dealer-grid"></div>
+  </section>
+
+  <!-- CHAMPIONSHIPS SECTION -->
+  <section id="section-championships" class="home-section hidden">
+    <h2 class="section-title">🏆 CHAMPIONSHIPS</h2>
+    <div class="cup-grid" id="cup-grid"></div>
+  </section>
+
+  <!-- CONTACT SECTION -->
+  <section id="section-contact" class="home-section hidden">
+    <h2 class="section-title">📡 CONTACT</h2>
+    <div class="contact-card">
+      <p>VortexVelocity is a fan-made racing game built with Three.js and pure passion.</p>
+      <p style="margin-top:12px;color:var(--dim)">Version 3.0 — All content fictional. For bugs or feedback, use the in-game report.</p>
+    </div>
+  </section>
 </div>
 
-<!-- GAME OVERLAY -->
-<div id="gameOverlay">
-    <button id="closeBtn" onclick="closeGame()">✖ Close</button>
-    <iframe id="gameFrame"></iframe>
+<!-- ═══════════════ RACE SELECT MODAL ═══════════════ -->
+<div id="race-select-modal" class="modal-overlay hidden">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3>SELECT TRACK & DIFFICULTY</h3>
+      <button class="modal-close" onclick="closeRaceSelect()">✕</button>
+    </div>
+    <div class="track-select-grid" id="track-select-grid"></div>
+    <div id="diff-select" class="diff-select hidden">
+      <div class="diff-track-name" id="diff-track-label"></div>
+      <div class="diff-btns">
+        <button class="diff-btn easy" onclick="beginRace('easy')">EASY<span>+10 VC</span></button>
+        <button class="diff-btn normal" onclick="beginRace('normal')">NORMAL<span>+20 VC</span></button>
+        <button class="diff-btn hard" onclick="beginRace('hard')">HARD<span>+40 VC</span></button>
+        <button class="diff-btn impossible" onclick="beginRace('impossible')">IMPOSSIBLE<span>+100 VC</span></button>
+      </div>
+      <button class="btn-back-sm" onclick="backToTrackSelect()">← BACK</button>
+    </div>
+  </div>
 </div>
 
-<!-- SCRIPT -->
-<script>
-function openGame(name) {
-    document.getElementById("gameOverlay").style.display = "block";
-    document.getElementById("gameFrame").src = "games/" + name + ".html";
-    document.body.style.overflow = "hidden";
-}
+<!-- ═══════════════ ADMIN MODAL ═══════════════ -->
+<div id="admin-modal" class="modal-overlay hidden">
+  <div class="modal-box narrow">
+    <div class="modal-header">
+      <h3>🔐 ADMIN ACCESS</h3>
+      <button class="modal-close" onclick="closeAdmin()">✕</button>
+    </div>
+    <div class="admin-inner">
+      <div class="admin-icon">🛡️</div>
+      <p style="color:var(--dim);margin-bottom:16px;font-size:.9rem">Enter the secret admin code</p>
+      <input type="password" id="admin-input" class="admin-input" placeholder="Enter secret code..." maxlength="20">
+      <div id="admin-msg" class="admin-msg"></div>
+      <button class="btn-primary" style="width:100%;margin-top:12px" onclick="checkAdmin()">ENTER</button>
+    </div>
+  </div>
+</div>
 
-function closeGame() {
-    document.getElementById("gameOverlay").style.display = "none";
-    document.getElementById("gameFrame").src = "";
-    document.body.style.overflow = "auto";
-}
-</script>
+<!-- ═══════════════ TOAST ═══════════════ -->
+<div id="toast"></div>
 
+<!-- ═══════════════ RACE SCREEN (3D Canvas) ═══════════════ -->
+<div id="race-screen" class="hidden">
+  <canvas id="three-canvas"></canvas>
+
+  <!-- HUD -->
+  <div id="race-hud">
+    <div class="hud-tl">
+      <div class="hud-speed"><span id="hud-kmh">0</span><small>KM/H</small></div>
+      <div class="hud-gear">GEAR <span id="hud-gear">1</span></div>
+    </div>
+    <div class="hud-tc">
+      <div class="hud-lap" id="hud-lap">LAP 1/3</div>
+      <div class="hud-pos" id="hud-pos">P1 / 4</div>
+      <div class="hud-time" id="hud-time">0:00.000</div>
+    </div>
+    <div class="hud-tr">
+      <div class="hud-track-name" id="hud-track"></div>
+      <div class="hud-diff" id="hud-diff"></div>
+    </div>
+
+    <!-- Nitro bar -->
+    <div class="hud-nitro-wrap">
+      <label>NITRO</label>
+      <div class="hud-nitro-bar"><div class="hud-nitro-fill" id="nitro-fill"></div></div>
+      <div class="nitro-type-label" id="nitro-type">BLUE</div>
+    </div>
+
+    <!-- Drift points flash -->
+    <div id="drift-flash" class="drift-flash hidden"></div>
+
+    <!-- Minimap -->
+    <canvas id="minimap" width="130" height="130"></canvas>
+
+    <!-- View toggle -->
+    <div class="view-btns">
+      <button class="view-btn active" id="vbtn-3rd" onclick="setView('third')">3RD</button>
+      <button class="view-btn" id="vbtn-1st" onclick="setView('first')">1ST</button>
+      <button class="view-btn" id="vbtn-top" onclick="setView('top')">TOP</button>
+    </div>
+
+    <!-- Mobile controls -->
+    <div id="mobile-controls" class="hidden">
+      <div id="joystick-zone">
+        <div id="joy-outer"></div>
+        <div id="joy-knob"></div>
+      </div>
+      <div class="mobile-right-btns">
+        <button class="mob-btn nitro-btn" id="mob-nitro">🔥<small>NITRO</small></button>
+        <button class="mob-btn brake-btn" id="mob-brake">BRAKE</button>
+        <button class="mob-btn drift-btn" id="mob-drift">DRIFT</button>
+      </div>
+    </div>
+
+    <!-- Pause -->
+    <button id="pause-btn" onclick="togglePause()">⏸</button>
+  </div>
+
+  <!-- Countdown -->
+  <div id="countdown" class="hidden"><div id="countdown-num">3</div></div>
+
+  <!-- Pause overlay -->
+  <div id="pause-overlay" class="hidden">
+    <h2>PAUSED</h2>
+    <button class="res-btn" onclick="togglePause()">RESUME</button>
+    <button class="res-btn sec" onclick="exitRace()">QUIT</button>
+  </div>
+
+  <!-- Result overlay -->
+  <div id="result-overlay" class="hidden">
+    <div id="result-title"></div>
+    <div id="result-detail"></div>
+    <div id="result-drift-bonus"></div>
+    <div class="result-btns">
+      <button class="res-btn" onclick="retryRace()">RETRY</button>
+      <button class="res-btn sec" onclick="exitRace()">MENU</button>
+    </div>
+  </div>
+
+  <!-- Lightning effect -->
+  <div id="lightning-flash" class="hidden"></div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="data.js"></script>
+<script src="save.js"></script>
+<script src="ui.js"></script>
+<script src="cars.js"></script>
+<script src="track.js"></script>
+<script src="game.js"></script>
+<script src="main.js"></script>
 </body>
 </html>
